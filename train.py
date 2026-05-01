@@ -24,6 +24,15 @@ from src.logging_utils import (
 from src.plotting import save_training_curves
 
 
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, int(seconds))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train discrete SAC for the IoT path-planning environment."
@@ -68,6 +77,12 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=None,
         help="Stop after this wall-clock time.",
+    )
+    parser.add_argument(
+        "--progress-every-seconds",
+        type=float,
+        default=10.0,
+        help="Print live training progress every N seconds. Set to 0 to disable.",
     )
 
 
@@ -242,6 +257,12 @@ def main() -> None:
     last_step_checkpoint = global_step
     last_time_checkpoint = time.monotonic()
     last_completed_episode = next_episode - 1
+    run_start_time = time.monotonic()
+    run_start_step = global_step
+    run_start_completed_episodes = len(metrics["cumulative_rewards"])
+    last_progress_time = run_start_time
+    last_progress_step = global_step
+    last_update_summary: dict[str, float] | None = None
 
     include_replay = not args.no_save_replay_buffer
 
@@ -408,12 +429,50 @@ def main() -> None:
                     for key in update_stats[0]
                     if isinstance(update_stats[0][key], (int, float))
                 }
+                last_update_summary = avg_update
                 for slot_index in active_indices:
                     slot = slots[slot_index]
                     if slot is not None:
                         slot["actor_losses"].append(avg_update["actor_loss"])
                         slot["critic_losses"].append(avg_update["critic_loss"])
                         slot["entropies"].append(avg_update["entropy"])
+
+            now = time.monotonic()
+            if args.progress_every_seconds > 0 and now - last_progress_time >= args.progress_every_seconds:
+                elapsed = now - run_start_time
+                total_step_delta = global_step - run_start_step
+                step_rate = total_step_delta / elapsed if elapsed > 0 else 0.0
+                interval_step_delta = global_step - last_progress_step
+                interval_elapsed = now - last_progress_time
+                interval_step_rate = interval_step_delta / interval_elapsed if interval_elapsed > 0 else 0.0
+                completed_episodes = len(metrics["cumulative_rewards"])
+                completed_this_run = completed_episodes - run_start_completed_episodes
+                active_slots = sum(slot is not None and slot["active"] for slot in slots)
+                recent_reward = (
+                    float(np.mean(metrics["cumulative_rewards"][-10:]))
+                    if metrics["cumulative_rewards"]
+                    else float("nan")
+                )
+                status_parts = [
+                    f"elapsed {format_duration(elapsed)}",
+                    f"episodes {completed_this_run}/{args.episodes}" if args.episodes is not None else f"episodes {completed_this_run}",
+                    f"steps {total_step_delta}/{args.timesteps}" if args.timesteps is not None else f"steps {total_step_delta}",
+                    f"active_envs {active_slots}",
+                    f"replay {len(agent.memory)}",
+                    f"step/s {step_rate:.1f}",
+                    f"step/s(last) {interval_step_rate:.1f}",
+                ]
+                if wall_stop is not None:
+                    status_parts.append(f"time_left {format_duration(wall_stop - now)}")
+                if metrics["cumulative_rewards"]:
+                    status_parts.append(f"reward10 {recent_reward:.1f}")
+                if last_update_summary is not None:
+                    status_parts.append(f"actor {last_update_summary['actor_loss']:.4f}")
+                    status_parts.append(f"critic {last_update_summary['critic_loss']:.4f}")
+                    status_parts.append(f"alpha {last_update_summary['alpha']:.4f}")
+                logger.info("Progress | %s", " | ".join(status_parts))
+                last_progress_time = now
+                last_progress_step = global_step
 
             if (
                 args.save_every_steps > 0

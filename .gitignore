@@ -1,0 +1,46 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging and test artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Project-local tool state
+.codex
+.codex/
+
+# Training and simulation artifacts
+artifacts/
+checkpoints/
+logs/
+runs/
+wandb/
+tensorboard/
+
+# Generated media and reports
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# Local environment files
+.env
+.env.*
