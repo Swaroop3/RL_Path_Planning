@@ -79,11 +79,11 @@ class SACAgent:
             return None
 
         batch = Transition(*zip(*self.memory.sample(self.batch_size)))
-        states = torch.stack(batch.state).to(self.device)
-        actions = torch.cat(batch.action).to(self.device)
-        rewards = torch.cat(batch.reward).to(self.device)
-        next_states = torch.stack(batch.next_state).to(self.device)
-        dones = torch.cat(batch.done).to(self.device)
+        states = torch.stack([state.detach().cpu() for state in batch.state]).to(self.device)
+        actions = torch.cat([action.detach().cpu() for action in batch.action]).to(self.device)
+        rewards = torch.cat([reward.detach().cpu() for reward in batch.reward]).to(self.device)
+        next_states = torch.stack([state.detach().cpu() for state in batch.next_state]).to(self.device)
+        dones = torch.cat([done.detach().cpu() for done in batch.done]).to(self.device)
 
         with torch.no_grad():
             next_probs = self.actor(next_states)
@@ -171,4 +171,3 @@ class SACAgent:
         self.alpha = float(self.log_alpha.exp().item())
         if load_replay_buffer and checkpoint.get("replay_buffer"):
             self.memory.load_state_dict(checkpoint["replay_buffer"])
-

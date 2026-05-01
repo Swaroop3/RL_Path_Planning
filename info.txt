@@ -1,0 +1,20 @@
+Train:
+python train.py --device cuda --timesteps 1000000 --vector-envs 16 --batch-size 1024 --learning-starts 10000 --gradient-steps 4 --save-every-episodes 50 --save-every-seconds 300
+
+Main knobs:
+--timesteps: total env steps
+--episodes: total episodes
+--vector-envs: rollout parallelism on CPU
+--batch-size: GPU memory/load
+--gradient-steps: GPU compute per rollout step
+--replay-buffer-size: RAM usage
+--progress-every-seconds: live status print interval
+
+Pause/resume:
+touch artifacts/control/PAUSE
+rm artifacts/control/PAUSE
+python train.py --resume artifacts/checkpoints/sac_interrupt.pt
+python train.py --auto-resume
+
+Simulate:
+python simulate.py --checkpoint artifacts/checkpoints/sac_best.pt --episodes 3
