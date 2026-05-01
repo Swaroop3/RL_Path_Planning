@@ -37,27 +37,15 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train discrete SAC for the IoT path-planning environment."
     )
-    parser.add_argument(
-        "--checkpoint-dir", type=Path, default=Path("artifacts/checkpoints")
-    )
+    parser.add_argument("--checkpoint-dir", type=Path, default=Path("artifacts/checkpoints"))
     parser.add_argument("--log-dir", type=Path, default=Path("artifacts/logs"))
-    parser.add_argument(
-        "--resume", type=Path, default=None, help="Checkpoint path to resume from."
-    )
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--device", type=str, default="cuda", help="cuda, cpu, or omitted for auto."
-    )
-    parser.add_argument(
-        "--auto-resume",
-        action="store_true",
-        help="Resume from the newest checkpoint in checkpoint-dir.",
-    )
-    parser.add_argument(
-        "--pause-file", type=Path, default=Path("artifacts/control/PAUSE")
-    )
+    parser.add_argument("--device", type=str, default="cuda", help="cuda, cpu, or omitted for auto.")
+    parser.add_argument("--pause-file", type=Path, default=Path("artifacts/control/PAUSE"))
+    parser.add_argument("--auto-resume", action="store_true", help="Resume from the newest checkpoint in checkpoint-dir.",)
     parser.add_argument("--torch-threads", type=int, default=None)
 
+    parser.add_argument("--resume", type=Path, default=Path("artifacts/checkpoints/sac_final.pt"), help="Checkpoint path to resume from.")
 
     
     parser.add_argument(
@@ -105,22 +93,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--vector-envs",
         type=int,
-        default=8,
+        default=16,
         help="Number of environments stepped per policy batch.",
     ) #CPU
-
-    parser.add_argument("--max-episode-steps", type=int, default=MAX_EPISODE_STEPS)#
-    parser.add_argument("--batch-size", type=int, default=1024) #GPU mem
-    parser.add_argument("--replay-buffer-size", type=int, default=100_000) #RAM
-    parser.add_argument("--learning-starts", type=int, default=128)
+    parser.add_argument("--max-episode-steps", type=int, default=MAX_EPISODE_STEPS) # per ep
+    parser.add_argument("--batch-size", type=int, default=1024*4) #GPU mem
+    parser.add_argument("--replay-buffer-size", type=int, default=300_000) #RAM
+    parser.add_argument("--learning-starts", type=int, default=10_000)
     parser.add_argument(
         "--gradient-steps",
         type=int,
-        default=1,
+        default=8,
         help="SAC updates after each vector environment step.",
     ) #GPU comp
-    parser.add_argument("--lr", type=float, default=3e-4)
-    parser.add_argument("--gamma", type=float, default=0.99)
+
+
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--tau", type=float, default=0.005)
     parser.add_argument("--target-entropy", type=float, default=None)
     parser.add_argument("--best-window", type=int, default=100)
