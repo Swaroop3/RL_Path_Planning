@@ -61,6 +61,7 @@ class IoTEnv:
         self.max_episode_steps = max_episode_steps
         self.num_actions = num_actions
         self.actionspace = {key: list(value) for key, value in ACTION_SPACE.items()}
+        self.obstacles = set(zip(self.Obstacle_x, self.Obstacle_y))
         self.reset()
 
     def reset(self) -> np.ndarray:
@@ -72,12 +73,26 @@ class IoTEnv:
         self.steps_counter = 0
         self.Is_Terminal = False
         self.visited_charger = 0
+        self.hit_boundary = False
+        self.hit_obstacle = False
+        self.previous_vector_agentState = np.copy(self.vector_agentState)
         return self.agentState
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, None]:
         velocity = self.actionspace[int(action)]
-        self.vector_agentState[0] = np.clip(self.vector_agentState[0] + velocity[0] * DT, 0, self.X_max)
-        self.vector_agentState[1] = np.clip(self.vector_agentState[1] + velocity[1] * DT, 0, self.Y_max)
+        self.previous_vector_agentState = np.copy(self.vector_agentState)
+        proposed_x = self.vector_agentState[0] + velocity[0] * DT
+        proposed_y = self.vector_agentState[1] + velocity[1] * DT
+        clipped_x = np.clip(proposed_x, 0, self.X_max)
+        clipped_y = np.clip(proposed_y, 0, self.Y_max)
+        self.hit_boundary = proposed_x != clipped_x or proposed_y != clipped_y
+
+        proposed_i_x = int(clipped_x / 10)
+        proposed_i_y = int(10 - clipped_y / 10)
+        self.hit_obstacle = (proposed_i_x, proposed_i_y) in self.obstacles
+        if not self.hit_obstacle:
+            self.vector_agentState[0] = clipped_x
+            self.vector_agentState[1] = clipped_y
 
         i_x = np.copy(self.vector_agentState[0]) / 10
         i_y = 10 - np.copy(self.vector_agentState[1]) / 10
@@ -131,4 +146,3 @@ class IoTEnv:
 
 # Backward-compatible alias for checkpoints or notebooks that reference the old name.
 IoT_env = IoTEnv
-

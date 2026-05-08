@@ -24,7 +24,7 @@ START_POSITION = np.asarray([10.0, 10.0])
 TERMINAL_POSITION = np.asarray([10.0, 10.0])
 CHARGER_POSITION = np.asarray([20.0, 80.0])
 CHARGER_ENERGY = 100_000_000
-MAX_EPISODE_STEPS = 5000
+MAX_EPISODE_STEPS = 500
 
 OBSTACLE_X = [0, 1, 1, 1, 1, 2, 4, 4, 4, 4, 5, 5, 5, 6, 8, 8, 8, 9, 9, 9, 9, 10, 10]
 OBSTACLE_Y = [2, 6, 5, 2, 1, 1, 8, 7, 4, 3, 7, 6, 3, 6, 10, 9, 3, 10, 9, 4, 3, 10, 9]
@@ -52,4 +52,3 @@ ACTION_SPACE = {
     3: [-MAX_UAV_VELOCITY, 0],
     4: [0, -MAX_UAV_VELOCITY],
 }
-

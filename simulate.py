@@ -20,13 +20,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=Path("artifacts/checkpoints/sac_best.pt"),
+        default=Path("artifacts_reward_v2/checkpoints/sac_best.pt"),
         help="Checkpoint to evaluate. Defaults to newest .pt in checkpoint-dir.",
     )
     parser.add_argument(
-        "--checkpoint-dir", type=Path, default=Path("artifacts/checkpoints")
+        "--checkpoint-dir", type=Path, default=Path("artifacts_reward_v2/checkpoints")
     )
-    parser.add_argument("--output-dir", type=Path, default=Path("artifacts/eval"))
+    parser.add_argument("--output-dir", type=Path, default=Path("artifacts_reward_v2/eval"))
     parser.add_argument("--episodes", type=int, default=3)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--seed", type=int, default=42)
@@ -79,12 +79,16 @@ def main() -> None:
         trajectory_x = [float(env.vector_agentState[0])]
         trajectory_y = [float(env.vector_agentState[1])]
         collected_data_trace = {sensor_id: [] for sensor_id in range(NUM_SENSORS)}
+        boundary_hits = 0
+        obstacle_hits = 0
 
         while not done and steps < env.max_episode_steps:
             action = agent.select_action(state, deterministic=not args.stochastic)
             next_state, reward, done, _ = env.step(action)
             reward_sum += reward
             steps += 1
+            boundary_hits += int(env.hit_boundary)
+            obstacle_hits += int(env.hit_obstacle)
             trajectory_x.append(float(env.vector_agentState[0]))
             trajectory_y.append(float(env.vector_agentState[1]))
             for sensor_id in range(NUM_SENSORS):
@@ -99,6 +103,7 @@ def main() -> None:
         all_steps.append(steps)
 
         row = {
+            "checkpoint": str(checkpoint_path),
             "episode": episode,
             "reward": float(reward_sum),
             "steps": int(steps),
@@ -108,6 +113,8 @@ def main() -> None:
             "collected_data_sum": float(np.sum(env.Collected_Data)),
             "final_x": float(env.vector_agentState[0]),
             "final_y": float(env.vector_agentState[1]),
+            "boundary_hits": int(boundary_hits),
+            "obstacle_hits": int(obstacle_hits),
         }
         rows.append(row)
         logger.info(

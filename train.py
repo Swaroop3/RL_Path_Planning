@@ -37,15 +37,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train discrete SAC for the IoT path-planning environment."
     )
-    parser.add_argument("--checkpoint-dir", type=Path, default=Path("artifacts/checkpoints"))
-    parser.add_argument("--log-dir", type=Path, default=Path("artifacts/logs"))
+    parser.add_argument("--checkpoint-dir", type=Path, default=Path("artifacts_reward_v2/checkpoints"))
+    parser.add_argument("--log-dir", type=Path, default=Path("artifacts_reward_v2/logs"))
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda", help="cuda, cpu, or omitted for auto.")
-    parser.add_argument("--pause-file", type=Path, default=Path("artifacts/control/PAUSE"))
     parser.add_argument("--auto-resume", action="store_true", help="Resume from the newest checkpoint in checkpoint-dir.",)
     parser.add_argument("--torch-threads", type=int, default=None)
 
-    parser.add_argument("--resume", type=Path, default=Path("artifacts/checkpoints/sac_final.pt"), help="Checkpoint path to resume from.")
+    parser.add_argument("--resume", type=Path, default=None, help="Checkpoint path to resume from.")
 
     
     parser.add_argument(
@@ -97,7 +96,7 @@ def parse_args() -> argparse.Namespace:
         help="Number of environments stepped per policy batch.",
     ) #CPU
     parser.add_argument("--max-episode-steps", type=int, default=MAX_EPISODE_STEPS) # per ep
-    parser.add_argument("--batch-size", type=int, default=1024*4) #GPU mem
+    parser.add_argument("--batch-size", type=int, default=1024) #GPU mem
     parser.add_argument("--replay-buffer-size", type=int, default=300_000) #RAM
     parser.add_argument("--learning-starts", type=int, default=10_000)
     parser.add_argument(
@@ -111,7 +110,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--gamma", type=float, default=0.995)
     parser.add_argument("--tau", type=float, default=0.005)
-    parser.add_argument("--target-entropy", type=float, default=None)
+    parser.add_argument("--target-entropy", type=float, default=0.5)
+    parser.add_argument("--max-grad-norm", type=float, default=10.0)
     parser.add_argument("--best-window", type=int, default=100)
     return parser.parse_args()
 
@@ -151,6 +151,8 @@ def new_slot(episode_index: int, max_episode_steps: int) -> dict[str, Any]:
         "actor_losses": [],
         "critic_losses": [],
         "entropies": [],
+        "boundary_hits": 0,
+        "obstacle_hits": 0,
         "active": True,
     }
 
@@ -159,7 +161,6 @@ def main() -> None:
     args = parse_args()
     args.checkpoint_dir.mkdir(parents=True, exist_ok=True)
     args.log_dir.mkdir(parents=True, exist_ok=True)
-    args.pause_file.parent.mkdir(parents=True, exist_ok=True)
 
     logger = configure_logging(args.log_dir, "train")
     seed_everything(args.seed)
@@ -174,6 +175,7 @@ def main() -> None:
         tau=args.tau,
         target_entropy=args.target_entropy,
         device=args.device,
+        max_grad_norm=args.max_grad_norm,
     )
 
     metrics = blank_metrics()
@@ -240,6 +242,8 @@ def main() -> None:
             "energy_level",
             "min_collected_data",
             "collected_data_sum",
+            "boundary_hits",
+            "obstacle_hits",
         ],
     )
     jsonl_logger = JsonlLogger(args.log_dir / "episode_metrics.jsonl")
@@ -296,10 +300,7 @@ def main() -> None:
         args.batch_size,
         args.gradient_steps,
     )
-    logger.info(
-        "Pause by creating %s; resume by deleting it. Ctrl+C saves sac_interrupt.pt.",
-        args.pause_file,
-    )
+    logger.info("Use Ctrl+C to stop; sac_final.pt is saved before exit.")
 
     try:
         while any(slot is not None and slot["active"] for slot in slots):
@@ -309,16 +310,6 @@ def main() -> None:
             if timestep_stop is not None and global_step >= timestep_stop:
                 logger.info("Timestep limit reached.")
                 break
-
-            if args.pause_file.exists():
-                save_named("sac_paused.pt", "pause")
-                logger.info(
-                    "Pause file exists; waiting until it is removed: %s",
-                    args.pause_file,
-                )
-                while args.pause_file.exists():
-                    time.sleep(5)
-                logger.info("Pause file removed; continuing.")
 
             active_indices = [
                 i for i, slot in enumerate(slots) if slot is not None and slot["active"]
@@ -338,6 +329,8 @@ def main() -> None:
                 slot["state"] = next_state
                 slot["reward"] += reward
                 slot["steps"] += 1
+                slot["boundary_hits"] += int(env.hit_boundary)
+                slot["obstacle_hits"] += int(env.hit_obstacle)
                 global_step += 1
 
                 if done or timeout:
@@ -356,14 +349,12 @@ def main() -> None:
                     metrics["entropies"].append(float(avg_entropy))
 
                     last_completed_episode = int(slot["episode"])
-                    if len(metrics["cumulative_rewards"]) >= args.best_window:
-                        rolling_avg = float(
-                            np.mean(metrics["cumulative_rewards"][-args.best_window :])
-                        )
-                        if rolling_avg > best_avg_reward:
-                            best_avg_reward = rolling_avg
-                            metrics["best_avg_reward"] = best_avg_reward
-                            save_named("sac_best.pt", "best")
+                    window = min(len(metrics["cumulative_rewards"]), args.best_window)
+                    rolling_avg = float(np.mean(metrics["cumulative_rewards"][-window:]))
+                    if rolling_avg > best_avg_reward:
+                        best_avg_reward = rolling_avg
+                        metrics["best_avg_reward"] = best_avg_reward
+                        save_named("sac_best.pt", "best")
 
                     row = {
                         "episode": slot["episode"],
@@ -379,6 +370,8 @@ def main() -> None:
                         "energy_level": float(env.energy_level),
                         "min_collected_data": float(np.min(env.Collected_Data)),
                         "collected_data_sum": float(np.sum(env.Collected_Data)),
+                        "boundary_hits": int(slot["boundary_hits"]),
+                        "obstacle_hits": int(slot["obstacle_hits"]),
                     }
                     csv_logger.write(row)
                     jsonl_logger.write(row)
@@ -478,8 +471,7 @@ def main() -> None:
                 last_time_checkpoint = time.monotonic()
 
     except KeyboardInterrupt:
-        logger.info("Interrupted by user.")
-        save_named("sac_interrupt.pt", "interrupt")
+        logger.info("Interrupted by user; saving final checkpoint.")
     finally:
         save_named("sac_final.pt", "final")
         csv_logger.close()
