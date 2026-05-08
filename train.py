@@ -51,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--episodes",
         type=int,
-        default=1000,
+        default=5_000,
         help="Number of new episodes to run in this invocation.",
     )
     parser.add_argument(
