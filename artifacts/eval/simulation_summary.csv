@@ -1,0 +1,4 @@
+episode,reward,steps,goal,energy_level,min_collected_data,collected_data_sum,final_x,final_y
+1,-125080.0,5000,False,9998354729.976654,0.0,0.0,10.0,100.0
+2,-125080.0,5000,False,9998354729.976654,0.0,0.0,10.0,100.0
+3,-125080.0,5000,False,9998354729.976654,0.0,0.0,10.0,100.0

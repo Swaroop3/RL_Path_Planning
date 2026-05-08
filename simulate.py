@@ -20,7 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=None,
+        default=Path("artifacts/checkpoints/sac_best.pt"),
         help="Checkpoint to evaluate. Defaults to newest .pt in checkpoint-dir.",
     )
     parser.add_argument(

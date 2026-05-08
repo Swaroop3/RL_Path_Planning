@@ -28,18 +28,20 @@ build/
 .codex/
 
 # Training and simulation artifacts
-artifacts/
-checkpoints/
-logs/
+# artifacts/
+# checkpoints/
+# logs/
 runs/
 wandb/
 tensorboard/
 
 # Generated media and reports
-*.png
+# *.png
 *.jpg
 *.jpeg
 *.pdf
+*.pt
+*.json
 
 # Local environment files
 .env
