@@ -41,7 +41,6 @@ tensorboard/
 *.jpeg
 *.pdf
 *.pt
-*.json
 
 # Local environment files
 .env
