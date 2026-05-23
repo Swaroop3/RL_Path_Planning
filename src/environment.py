@@ -75,11 +75,14 @@ class IoTEnv:
         self.visited_charger = 0
         self.hit_boundary = False
         self.hit_obstacle = False
+        self.last_action = None
         self.previous_vector_agentState = np.copy(self.vector_agentState)
         return self.agentState
 
     def step(self, action: int) -> tuple[np.ndarray, float, bool, None]:
-        velocity = self.actionspace[int(action)]
+        action = int(action)
+        self.last_action = action
+        velocity = self.actionspace[action]
         self.previous_vector_agentState = np.copy(self.vector_agentState)
         proposed_x = self.vector_agentState[0] + velocity[0] * DT
         proposed_y = self.vector_agentState[1] + velocity[1] * DT

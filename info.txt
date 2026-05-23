@@ -13,8 +13,8 @@ Main knobs:
 --progress-every-seconds: live status print interval
 
 Stop/resume:
-Ctrl+C saves artifacts_reward_v2/checkpoints/sac_final.pt
-python train.py --resume artifacts_reward_v2/checkpoints/sac_ep2100.pt
+Ctrl+C saves artifacts_reward_v3/checkpoints/sac_final.pt
+python train.py --resume artifacts_reward_v3/checkpoints/sac_ep2100.pt
 python train.py --auto-resume
 
 Simulate:

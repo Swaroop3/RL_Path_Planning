@@ -21,13 +21,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=Path("artifacts_reward_v2/checkpoints/sac_best.pt"),
+        default=Path("artifacts_reward_v3/checkpoints/sac_best.pt"),
         help="Checkpoint to evaluate. Defaults to newest .pt in checkpoint-dir.",
     )
     parser.add_argument(
-        "--checkpoint-dir", type=Path, default=Path("artifacts_reward_v2/checkpoints")
+        "--checkpoint-dir", type=Path, default=Path("artifacts_reward_v3/checkpoints")
     )
-    parser.add_argument("--output-dir", type=Path, default=Path("artifacts_reward_v2/eval"))
+    parser.add_argument("--output-dir", type=Path, default=Path("artifacts_reward_v3/eval"))
     parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--seed", type=int, default=42)

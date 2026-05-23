@@ -29,6 +29,7 @@ SENSOR_COMPLETED_REWARD = 75.0
 DATA_PROGRESS_SCALE = 100.0
 TARGET_PROGRESS_SCALE = 0.4
 INCOMPLETE_SENSOR_PENALTY = -0.2
+IDLE_NO_PROGRESS_PENALTY = -10.0
 
 
 def channel(vector_agent_state: np.ndarray, sensors_xy: dict[int, list[float]]) -> tuple[np.ndarray, np.ndarray]:
@@ -109,6 +110,8 @@ def compute_reward(env: object) -> float:
     capped_new = np.minimum(env.Collected_Data, DATA_REQ)
     data_fraction_delta = float(np.sum((capped_new - capped_old) / DATA_REQ))
     reward += DATA_PROGRESS_SCALE * data_fraction_delta
+    if getattr(env, "last_action", None) == 0 and data_fraction_delta <= 0:
+        reward += IDLE_NO_PROGRESS_PENALTY
 
     new_complete = env.Collected_Data > DATA_REQ
     newly_completed = int(np.sum(new_complete & ~old_complete))

@@ -11,7 +11,7 @@ import torch
 
 from src.agent import SACAgent
 from src.checkpoints import latest_checkpoint, load_checkpoint, save_checkpoint
-from src.constants import MAX_EPISODE_STEPS, NUM_SENSORS
+from src.constants import DATA_REQ, MAX_EPISODE_STEPS, NUM_SENSORS
 from src.environment import IoTEnv
 from src.logging_utils import (
     CsvMetricLogger,
@@ -37,8 +37,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Train discrete SAC for the IoT path-planning environment."
     )
-    parser.add_argument("--checkpoint-dir", type=Path, default=Path("artifacts_reward_v2/checkpoints"))
-    parser.add_argument("--log-dir", type=Path, default=Path("artifacts_reward_v2/logs"))
+    parser.add_argument("--checkpoint-dir", type=Path, default=Path("artifacts_reward_v3/checkpoints"))
+    parser.add_argument("--log-dir", type=Path, default=Path("artifacts_reward_v3/logs"))
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", type=str, default="cuda", help="cuda, cpu, or omitted for auto.")
     parser.add_argument("--auto-resume", action="store_true", help="Resume from the newest checkpoint in checkpoint-dir.",)
@@ -125,7 +125,25 @@ def blank_metrics() -> dict[str, list[float] | float]:
         "alphas": [],
         "entropies": [],
         "best_avg_reward": float("-inf"),
+        "best_mission_score": [],
     }
+
+
+def mission_score(
+    *,
+    goal: bool,
+    min_collected_data: float,
+    capped_collected_data_sum: float,
+    steps: int,
+    reward: float,
+) -> tuple[float, float, float, float, float]:
+    return (
+        float(goal),
+        float(min_collected_data),
+        float(capped_collected_data_sum),
+        float(-steps),
+        float(reward),
+    )
 
 
 def as_config(args: argparse.Namespace) -> dict[str, Any]:
@@ -180,6 +198,7 @@ def main() -> None:
 
     metrics = blank_metrics()
     best_avg_reward = float("-inf")
+    best_mission_score: tuple[float, float, float, float, float] | None = None
     global_step = 0
     next_episode = 0
 
@@ -206,6 +225,11 @@ def main() -> None:
                 "best_avg_reward", metrics.get("best_avg_reward", float("-inf"))
             )
         )
+        stored_best_mission_score = training_state.get(
+            "best_mission_score", metrics.get("best_mission_score")
+        )
+        if stored_best_mission_score:
+            best_mission_score = tuple(float(value) for value in stored_best_mission_score)  # type: ignore[assignment]
         global_step = int(training_state.get("global_step", 0))
         next_episode = int(
             training_state.get("next_episode", training_state.get("episode", -1) + 1)
@@ -242,6 +266,7 @@ def main() -> None:
             "energy_level",
             "min_collected_data",
             "collected_data_sum",
+            "mission_score",
             "boundary_hits",
             "obstacle_hits",
         ],
@@ -266,6 +291,7 @@ def main() -> None:
             "global_step": global_step,
             "metrics": metrics,
             "best_avg_reward": best_avg_reward,
+            "best_mission_score": list(best_mission_score) if best_mission_score else [],
             "saved_at_unix": time.time(),
         }
 
@@ -349,11 +375,29 @@ def main() -> None:
                     metrics["entropies"].append(float(avg_entropy))
 
                     last_completed_episode = int(slot["episode"])
+                    collected_data_sum = float(np.sum(env.Collected_Data))
+                    capped_collected_data = np.minimum(env.Collected_Data, DATA_REQ)
+                    min_collected_data = float(np.min(env.Collected_Data))
+                    capped_min_collected_data = float(np.min(capped_collected_data))
+                    capped_collected_data_sum = float(np.sum(capped_collected_data))
+                    candidate_mission_score = mission_score(
+                        goal=bool(done),
+                        min_collected_data=capped_min_collected_data,
+                        capped_collected_data_sum=capped_collected_data_sum,
+                        steps=int(slot["steps"]),
+                        reward=float(slot["reward"]),
+                    )
                     window = min(len(metrics["cumulative_rewards"]), args.best_window)
                     rolling_avg = float(np.mean(metrics["cumulative_rewards"][-window:]))
                     if rolling_avg > best_avg_reward:
                         best_avg_reward = rolling_avg
                         metrics["best_avg_reward"] = best_avg_reward
+                    if (
+                        best_mission_score is None
+                        or candidate_mission_score > best_mission_score
+                    ):
+                        best_mission_score = candidate_mission_score
+                        metrics["best_mission_score"] = list(best_mission_score)
                         save_named("sac_best.pt", "best")
 
                     row = {
@@ -368,8 +412,11 @@ def main() -> None:
                         "alpha": float(agent.alpha),
                         "replay_size": len(agent.memory),
                         "energy_level": float(env.energy_level),
-                        "min_collected_data": float(np.min(env.Collected_Data)),
-                        "collected_data_sum": float(np.sum(env.Collected_Data)),
+                        "min_collected_data": min_collected_data,
+                        "collected_data_sum": collected_data_sum,
+                        "mission_score": "|".join(
+                            f"{value:.6g}" for value in candidate_mission_score
+                        ),
                         "boundary_hits": int(slot["boundary_hits"]),
                         "obstacle_hits": int(slot["obstacle_hits"]),
                     }

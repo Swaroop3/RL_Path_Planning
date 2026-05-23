@@ -45,19 +45,19 @@ Both scripts are configured through argparse defaults in the files. CLI flags ca
 
 ## Checkpoints
 
-Checkpoints are written to `artifacts_reward_v2/checkpoints/`.
+Checkpoints are written to `artifacts_reward_v3/checkpoints/`.
 
-The previous long run is intentionally kept under `artifacts/`. The current defaults write to `artifacts_reward_v2/` because the reward function and SAC stability behavior changed enough that old checkpoints should be treated as historical comparison data, not resumed training state.
+Previous runs are intentionally kept under `artifacts/` and `artifacts_reward_v2/`. The current defaults write to `artifacts_reward_v3/` because the v2 best checkpoint learned to collect one sensor and then idle, so this version changes reward and best-checkpoint selection.
 
 - `sac_ep<N>.pt`: numbered checkpoint every `--save-every-episodes`.
-- `sac_best.pt`: best rolling reward checkpoint.
+- `sac_best.pt`: best mission-progress checkpoint, ranked by goal, capped minimum sensor data, capped total sensor data, fewer steps, then reward.
 - `sac_latest.pt`: periodic wall-clock checkpoint.
 - `sac_final.pt`: final checkpoint when training exits.
 
 Resume explicitly:
 
 ```bash
-python train.py --resume artifacts_reward_v2/checkpoints/sac_ep2100.pt
+python train.py --resume artifacts_reward_v3/checkpoints/sac_ep2100.pt
 ```
 
 Auto-resume newest checkpoint:
@@ -74,17 +74,17 @@ Use Ctrl+C to stop training. The `finally` block writes `sac_final.pt`, so resum
 
 ## Outputs
 
-- `artifacts_reward_v2/logs/train.log`: live training log.
-- `artifacts_reward_v2/logs/episode_metrics.csv`: per-episode metrics.
-- `artifacts_reward_v2/logs/episode_metrics.jsonl`: same data as JSONL.
-- `artifacts_reward_v2/checkpoints/metrics.json`: checkpointed metric history.
-- `artifacts_reward_v2/checkpoints/training_curves.png`: reward/steps/loss plot.
-- `artifacts_reward_v2/eval/simulate.log`: evaluation log.
-- `artifacts_reward_v2/eval/<checkpoint>_simulation_summary.csv`: evaluation summary, including checkpoint path.
-- `artifacts_reward_v2/eval/<checkpoint>_trajectory_ep*.csv`: raw step-by-step position/action/reward trace.
-- `artifacts_reward_v2/eval/<checkpoint>_data_ep*.csv`: raw per-step sensor data trace.
-- `artifacts_reward_v2/eval/<checkpoint>_trajectory_ep*.png`: trajectory plots.
-- `artifacts_reward_v2/eval/<checkpoint>_data_ep*.png`: sensor data collection plots.
+- `artifacts_reward_v3/logs/train.log`: live training log.
+- `artifacts_reward_v3/logs/episode_metrics.csv`: per-episode metrics.
+- `artifacts_reward_v3/logs/episode_metrics.jsonl`: same data as JSONL.
+- `artifacts_reward_v3/checkpoints/metrics.json`: checkpointed metric history.
+- `artifacts_reward_v3/checkpoints/training_curves.png`: reward/steps/loss plot.
+- `artifacts_reward_v3/eval/simulate.log`: evaluation log.
+- `artifacts_reward_v3/eval/<checkpoint>_simulation_summary.csv`: evaluation summary, including checkpoint path.
+- `artifacts_reward_v3/eval/<checkpoint>_trajectory_ep*.csv`: raw step-by-step position/action/reward trace.
+- `artifacts_reward_v3/eval/<checkpoint>_data_ep*.csv`: raw per-step sensor data trace.
+- `artifacts_reward_v3/eval/<checkpoint>_trajectory_ep*.png`: trajectory plots.
+- `artifacts_reward_v3/eval/<checkpoint>_data_ep*.png`: sensor data collection plots.
 
 If an eval for the same checkpoint already exists, the script adds `run02`, `run03`, etc. to avoid overwriting older outputs.
 
@@ -118,10 +118,15 @@ Reward/environment revision:
 - Reward now includes bounded step cost, data-progress reward, first sensor-completion reward, all-data-complete bonus, distance progress toward the current target, terminal success reward, and energy failure penalty.
 - Training metrics now include `boundary_hits` and `obstacle_hits`.
 
+Reward v3 revision:
+
+- Action `0` hover/stay is penalized when it makes no data progress, while useful data-collection hovering remains allowed.
+- `sac_best.pt` is selected by mission progress rather than rolling reward, so a partial one-sensor policy should not outrank a policy that covers more sensors.
+- New default artifacts are written under `artifacts_reward_v3/` so old v2 run data remains untouched.
+
 SAC stability revision:
 
 - Default `target_entropy` is 0.5.
 - Alpha is clamped to a finite range after updates.
 - Actor and critic gradients are clipped.
 - Critic loss uses Huber loss instead of raw MSE.
-- New default artifacts are written under `artifacts_reward_v2/` so old run data remains untouched.
