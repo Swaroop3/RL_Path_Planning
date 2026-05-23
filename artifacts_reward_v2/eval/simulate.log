@@ -1,0 +1,32 @@
+2026-05-23 16:01:31,842 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_best.pt
+2026-05-23 16:01:34,838 | INFO | Ep 1 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:01:37,763 | INFO | Ep 2 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:01:39,123 | INFO | Ep 3 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:01:39,683 | INFO | Goal reached: 0/3 (0%)
+2026-05-23 16:01:39,684 | INFO | Avg reward: -702.08 +/- 0.00
+2026-05-23 16:01:39,684 | INFO | Avg steps: 500.0 +/- 0.0
+2026-05-23 16:01:39,684 | INFO | Simulation outputs saved to artifacts_reward_v2/eval
+2026-05-23 16:06:22,142 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_best.pt
+2026-05-23 16:06:22,970 | INFO | Ep 1 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:06:24,465 | INFO | Ep 2 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:06:25,898 | INFO | Ep 3 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:06:26,765 | INFO | Goal reached: 0/3 (0%)
+2026-05-23 16:06:26,766 | INFO | Avg reward: -702.08 +/- 0.00
+2026-05-23 16:06:26,766 | INFO | Avg steps: 500.0 +/- 0.0
+2026-05-23 16:06:26,766 | INFO | Simulation outputs saved to artifacts_reward_v2/eval
+2026-05-23 16:08:20,317 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_best.pt
+2026-05-23 16:08:21,122 | INFO | Ep 1 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:08:22,479 | INFO | Ep 2 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:08:23,810 | INFO | Ep 3 | reward -702.1 | steps 500 | timeout
+2026-05-23 16:08:24,350 | INFO | Goal reached: 0/3 (0%)
+2026-05-23 16:08:24,351 | INFO | Avg reward: -702.08 +/- 0.00
+2026-05-23 16:08:24,351 | INFO | Avg steps: 500.0 +/- 0.0
+2026-05-23 16:08:24,351 | INFO | Simulation outputs saved to artifacts_reward_v2/eval
+2026-05-23 16:17:25,413 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_ep3000.pt
+2026-05-23 16:17:26,226 | INFO | Ep 1 | reward -25954.0 | steps 500 | timeout
+2026-05-23 16:17:27,652 | INFO | Ep 2 | reward -25954.0 | steps 500 | timeout
+2026-05-23 16:17:29,039 | INFO | Ep 3 | reward -25954.0 | steps 500 | timeout
+2026-05-23 16:17:29,811 | INFO | Goal reached: 0/3 (0%)
+2026-05-23 16:17:29,812 | INFO | Avg reward: -25954.00 +/- 0.00
+2026-05-23 16:17:29,812 | INFO | Avg steps: 500.0 +/- 0.0
+2026-05-23 16:17:29,812 | INFO | Simulation outputs saved to artifacts_reward_v2/eval

@@ -1,0 +1,4 @@
+checkpoint,episode,reward,steps,goal,energy_level,min_collected_data,collected_data_sum,final_x,final_y,boundary_hits,obstacle_hits
+artifacts_reward_v2/checkpoints/sac_ep3000.pt,1,-25954.0,500,False,9999835472.997665,0.0,0.0,0.0,10.0,499,0
+artifacts_reward_v2/checkpoints/sac_ep3000.pt,2,-25954.0,500,False,9999835472.997665,0.0,0.0,0.0,10.0,499,0
+artifacts_reward_v2/checkpoints/sac_ep3000.pt,3,-25954.0,500,False,9999835472.997665,0.0,0.0,0.0,10.0,499,0
