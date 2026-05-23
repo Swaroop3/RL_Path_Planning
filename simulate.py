@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 from pathlib import Path
 
 import numpy as np
@@ -27,7 +28,7 @@ def parse_args() -> argparse.Namespace:
         "--checkpoint-dir", type=Path, default=Path("artifacts_reward_v2/checkpoints")
     )
     parser.add_argument("--output-dir", type=Path, default=Path("artifacts_reward_v2/eval"))
-    parser.add_argument("--episodes", type=int, default=3)
+    parser.add_argument("--episodes", type=int, default=1)
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max-episode-steps", type=int, default=MAX_EPISODE_STEPS)
@@ -40,6 +41,36 @@ def parse_args() -> argparse.Namespace:
         "--no-plots", action="store_true", help="Skip PNG trajectory/data plots."
     )
     return parser.parse_args()
+
+
+def safe_stem(name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", name).strip("_") or "checkpoint"
+
+
+def next_eval_stem(output_dir: Path, checkpoint_path: Path) -> str:
+    base = safe_stem(checkpoint_path.stem)
+    candidate = base
+    counter = 2
+    suffixes = (
+        "_simulation_summary.csv",
+        "_trajectory_ep1.csv",
+        "_data_ep1.csv",
+        "_trajectory_ep1.png",
+        "_data_ep1.png",
+    )
+    while any((output_dir / f"{candidate}{suffix}").exists() for suffix in suffixes):
+        candidate = f"{base}_run{counter:02d}"
+        counter += 1
+    return candidate
+
+
+def write_csv(path: Path, rows: list[dict]) -> None:
+    if not rows:
+        return
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def main() -> None:
@@ -64,7 +95,9 @@ def main() -> None:
         " (legacy notebook format)" if checkpoint.get("legacy") else "",
     )
 
-    summary_path = args.output_dir / "simulation_summary.csv"
+    eval_stem = next_eval_stem(args.output_dir, checkpoint_path)
+    summary_path = args.output_dir / f"{eval_stem}_simulation_summary.csv"
+    logger.info("Saving evaluation artifacts with stem %s", eval_stem)
     rows = []
     all_rewards = []
     all_steps = []
@@ -79,6 +112,29 @@ def main() -> None:
         trajectory_x = [float(env.vector_agentState[0])]
         trajectory_y = [float(env.vector_agentState[1])]
         collected_data_trace = {sensor_id: [] for sensor_id in range(NUM_SENSORS)}
+        trajectory_rows = [
+            {
+                "step": 0,
+                "action": "",
+                "reward": 0.0,
+                "x": float(env.vector_agentState[0]),
+                "y": float(env.vector_agentState[1]),
+                "energy_level": float(env.energy_level),
+                "min_collected_data": float(np.min(env.Collected_Data)),
+                "collected_data_sum": float(np.sum(env.Collected_Data)),
+                "boundary_hit": False,
+                "obstacle_hit": False,
+            }
+        ]
+        data_rows = [
+            {
+                "step": 0,
+                **{
+                    f"sensor_{sensor_id}": float(env.Collected_Data[sensor_id])
+                    for sensor_id in range(NUM_SENSORS)
+                },
+            }
+        ]
         boundary_hits = 0
         obstacle_hits = 0
 
@@ -95,6 +151,29 @@ def main() -> None:
                 collected_data_trace[sensor_id].append(
                     float(env.Collected_Data[sensor_id])
                 )
+            trajectory_rows.append(
+                {
+                    "step": steps,
+                    "action": int(action),
+                    "reward": float(reward),
+                    "x": float(env.vector_agentState[0]),
+                    "y": float(env.vector_agentState[1]),
+                    "energy_level": float(env.energy_level),
+                    "min_collected_data": float(np.min(env.Collected_Data)),
+                    "collected_data_sum": float(np.sum(env.Collected_Data)),
+                    "boundary_hit": bool(env.hit_boundary),
+                    "obstacle_hit": bool(env.hit_obstacle),
+                }
+            )
+            data_rows.append(
+                {
+                    "step": steps,
+                    **{
+                        f"sensor_{sensor_id}": float(env.Collected_Data[sensor_id])
+                        for sensor_id in range(NUM_SENSORS)
+                    },
+                }
+            )
             state = next_state
 
         if done:
@@ -125,6 +204,9 @@ def main() -> None:
             "GOAL" if done else "timeout",
         )
 
+        write_csv(args.output_dir / f"{eval_stem}_trajectory_ep{episode}.csv", trajectory_rows)
+        write_csv(args.output_dir / f"{eval_stem}_data_ep{episode}.csv", data_rows)
+
         if not args.no_plots:
             save_evaluation_plots(
                 env,
@@ -136,12 +218,10 @@ def main() -> None:
                 done,
                 episode,
                 args.output_dir,
+                eval_stem,
             )
 
-    with summary_path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(summary_path, rows)
 
     logger.info(
         "Goal reached: %s/%s (%.0f%%)",

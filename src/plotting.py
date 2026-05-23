@@ -75,6 +75,7 @@ def save_evaluation_plots(
     done: bool,
     episode: int,
     output_dir: str | Path,
+    artifact_stem: str = "eval",
 ) -> None:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -123,7 +124,7 @@ def save_evaluation_plots(
     ax.set_title(f"Ep {episode} | Reward: {reward:.1f} | Steps: {steps} | {goal_str}", fontsize=10)
     ax.legend(loc="upper right", fontsize=8)
     fig.tight_layout()
-    fig.savefig(output_dir / f"eval_trajectory_ep{episode}.png", dpi=150, bbox_inches="tight")
+    fig.savefig(output_dir / f"{artifact_stem}_trajectory_ep{episode}.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     if steps <= 0:
@@ -142,6 +143,5 @@ def save_evaluation_plots(
     ax2.set_xlim(0, max(1, steps - 1))
     ax2.legend(fontsize=8)
     fig2.tight_layout()
-    fig2.savefig(output_dir / f"eval_data_ep{episode}.png", dpi=150, bbox_inches="tight")
+    fig2.savefig(output_dir / f"{artifact_stem}_data_ep{episode}.png", dpi=150, bbox_inches="tight")
     plt.close(fig2)
-

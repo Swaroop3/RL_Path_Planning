@@ -80,9 +80,13 @@ Use Ctrl+C to stop training. The `finally` block writes `sac_final.pt`, so resum
 - `artifacts_reward_v2/checkpoints/metrics.json`: checkpointed metric history.
 - `artifacts_reward_v2/checkpoints/training_curves.png`: reward/steps/loss plot.
 - `artifacts_reward_v2/eval/simulate.log`: evaluation log.
-- `artifacts_reward_v2/eval/simulation_summary.csv`: evaluation summary, including checkpoint path.
-- `artifacts_reward_v2/eval/eval_trajectory_ep*.png`: trajectory plots.
-- `artifacts_reward_v2/eval/eval_data_ep*.png`: sensor data collection plots.
+- `artifacts_reward_v2/eval/<checkpoint>_simulation_summary.csv`: evaluation summary, including checkpoint path.
+- `artifacts_reward_v2/eval/<checkpoint>_trajectory_ep*.csv`: raw step-by-step position/action/reward trace.
+- `artifacts_reward_v2/eval/<checkpoint>_data_ep*.csv`: raw per-step sensor data trace.
+- `artifacts_reward_v2/eval/<checkpoint>_trajectory_ep*.png`: trajectory plots.
+- `artifacts_reward_v2/eval/<checkpoint>_data_ep*.png`: sensor data collection plots.
+
+If an eval for the same checkpoint already exists, the script adds `run02`, `run03`, etc. to avoid overwriting older outputs.
 
 ## Diagnosis
 

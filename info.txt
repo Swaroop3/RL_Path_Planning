@@ -19,3 +19,4 @@ python train.py --auto-resume
 
 Simulate:
 python simulate.py
+Eval outputs are named with the checkpoint stem and never overwrite older runs.
