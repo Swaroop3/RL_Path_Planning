@@ -45,3 +45,17 @@
 2026-05-23 16:48:30,242 | INFO | Avg reward: -702.08 +/- 0.00
 2026-05-23 16:48:30,242 | INFO | Avg steps: 500.0 +/- 0.0
 2026-05-23 16:48:30,242 | INFO | Simulation outputs saved to artifacts_reward_v2/eval
+2026-05-26 13:16:04,428 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_best.pt
+2026-05-26 13:16:04,446 | INFO | Saving evaluation artifacts with stem sac_best_run02
+2026-05-26 13:16:05,463 | INFO | Ep 1 | reward -5562.1 | steps 500 | timeout
+2026-05-26 13:16:06,071 | INFO | Goal reached: 0/1 (0%)
+2026-05-26 13:16:06,071 | INFO | Avg reward: -5562.08 +/- 0.00
+2026-05-26 13:16:06,072 | INFO | Avg steps: 500.0 +/- 0.0
+2026-05-26 13:16:06,072 | INFO | Simulation outputs saved to artifacts_reward_v2/eval
+2026-06-08 14:06:54,240 | INFO | Loaded checkpoint artifacts_reward_v2/checkpoints/sac_best.pt
+2026-06-08 14:06:54,241 | INFO | Saving evaluation artifacts with stem sac_best_run03
+2026-06-08 14:06:55,287 | INFO | Ep 1 | reward -5562.1 | steps 500 | timeout
+2026-06-08 14:06:55,849 | INFO | Goal reached: 0/1 (0%)
+2026-06-08 14:06:55,849 | INFO | Avg reward: -5562.08 +/- 0.00
+2026-06-08 14:06:55,850 | INFO | Avg steps: 500.0 +/- 0.0
+2026-06-08 14:06:55,850 | INFO | Simulation outputs saved to artifacts_reward_v2/eval

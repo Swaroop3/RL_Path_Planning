@@ -1,0 +1,2 @@
+checkpoint,episode,reward,steps,goal,energy_level,min_collected_data,collected_data_sum,final_x,final_y,boundary_hits,obstacle_hits
+artifacts_reward_v2/checkpoints/sac_best.pt,1,-5562.079059351397,500,False,9999830843.363972,0.0,1063016990.941034,40.0,0.0,0,0
